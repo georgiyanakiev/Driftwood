@@ -7,6 +7,15 @@ export function usePosts() {
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = useCallback(async () => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setPosts([]);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -27,19 +36,31 @@ export function usePosts() {
   }, [fetchPosts]);
 
   const generatePost = async (topic: string): Promise<string | null> => {
-    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-post`;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('YOUR_PROJECT_REF') || supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY')) {
+      throw new Error('Missing or invalid Supabase configuration. Set the real VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY values from your Supabase project settings.');
+    }
+
+    const apiUrl = `${supabaseUrl}/functions/v1/generate-post`;
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
       },
       body: JSON.stringify({ topic }),
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(err.error || `Request failed (${response.status})`);
+      const message = err.error || err.message || `Request failed (${response.status})`;
+      if (response.status === 401) {
+        throw new Error(`Supabase auth failed: ${message}. Check that your project URL and anon key match the live Supabase project.`);
+      }
+      throw new Error(message);
     }
 
     const data = await response.json();
