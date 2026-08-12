@@ -208,7 +208,7 @@ async function generatePost(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-3-haiku-20240307",
+      model: "claude-sonnet-5",
       max_tokens: 300,
       messages: [
         { role: "user", content: userPrompt },
@@ -261,7 +261,7 @@ async function reviewPost(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-3-haiku-20240307",
+      model: "claude-sonnet-5",
       max_tokens: 200,
       messages: [
         {
